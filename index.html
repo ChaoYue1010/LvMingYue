@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="format-detection" content="telephone=no">
+  <title>爱不爱我？</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .container {
+      text-align: center;
+      z-index: 10;
+      padding: 20px;
+      transition: opacity 0.5s;
+    }
+
+    .container.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(255, 50, 80, 0.4);
+      margin-bottom: 50px;
+      letter-spacing: 2px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: none;
+      font-size: 1.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .btn:active {
+      transform: scale(0.92);
+    }
+
+    .btn-love {
+      background: linear-gradient(145deg, #ff416c, #ff4b2b);
+      color: #fff;
+      box-shadow: 0 8px 25px rgba(255, 65, 108, 0.5);
+    }
+
+    .btn-no {
+      background: linear-gradient(145deg, #bdc3c7, #95a5a6);
+      color: #fff;
+      box-shadow: 0 8px 25px rgba(149, 165, 166, 0.4);
+    }
+
+    .btn-no.shake {
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-12px); }
+      40% { transform: translateX(12px); }
+      60% { transform: translateX(-8px); }
+      80% { transform: translateX(8px); }
+    }
+
+    /* 错误提示 */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      padding: 20px 36px;
+      border-radius: 16px;
+      font-size: 1.2rem;
+      z-index: 100;
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .toast.show {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    .toast .icon {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* 红心满屏 */
+    #hearts-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+      overflow: hidden;
+      display: none;
+    }
+
+    #hearts-container.active {
+      display: block;
+    }
+
+    .heart {
+      position: absolute;
+      color: #ff1744;
+      animation: floatUp linear forwards;
+      text-shadow: 0 0 6px rgba(255, 23, 68, 0.5);
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-110vh) rotate(720deg) scale(0.3);
+        opacity: 0;
+      }
+    }
+
+    /* 成功文字 */
+    .success-msg {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 60;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s;
+    }
+
+    .success-msg.show {
+      opacity: 1;
+    }
+
+    .success-msg h2 {
+      font-size: 2.5rem;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(255, 23, 68, 0.8), 0 2px 10px rgba(0,0,0,0.2);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    /* 第二步 */
+    .step2 {
+      text-align: center;
+      z-index: 10;
+      padding: 20px;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .step2.show {
+      display: block;
+      opacity: 1;
+    }
+
+    .step2 p {
+      font-size: 1.3rem;
+      color: #fff;
+      margin-bottom: 24px;
+      text-shadow: 0 2px 8px rgba(255, 50, 80, 0.3);
+    }
+
+    .input-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .step2 input {
+      width: 220px;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 30px;
+      font-size: 1.2rem;
+      text-align: center;
+      outline: none;
+      box-shadow: 0 4px 20px rgba(255, 65, 108, 0.3);
+    }
+
+    .btn-submit {
+      width: 160px;
+      height: 56px;
+      border-radius: 28px;
+      border: none;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #fff;
+      background: linear-gradient(145deg, #ff416c, #ff4b2b);
+      box-shadow: 0 8px 25px rgba(255, 65, 108, 0.5);
+      cursor: pointer;
+    }
+
+    .btn-submit:active {
+      transform: scale(0.95);
+    }
+
+    /* 大红心 */
+    .big-heart {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      z-index: 70;
+      opacity: 0;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .big-heart .heart-wrap {
+      position: relative;
+      width: 240px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .big-heart.show {
+      animation: heartPop 1.2s ease forwards;
+    }
+
+    @keyframes heartPop {
+      0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+      }
+      70% {
+        transform: translate(-50%, -50%) scale(0.95);
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .big-heart .heart-shape {
+      width: 240px;
+      height: 240px;
+      background: #ff1744;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-top: -60px;
+      margin-left: -120px;
+      transform: rotate(-45deg);
+      box-shadow: 0 0 60px rgba(255, 23, 68, 0.8), 0 0 120px rgba(255, 23, 68, 0.4);
+      animation: heartBeat 1s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .big-heart .heart-shape::before,
+    .big-heart .heart-shape::after {
+      content: '';
+      width: 240px;
+      height: 240px;
+      background: #ff1744;
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    .big-heart .heart-shape::before {
+      top: -120px;
+      left: 0;
+    }
+
+    .big-heart .heart-shape::after {
+      top: 0;
+      left: 120px;
+    }
+
+    @keyframes heartBeat {
+      0%, 100% { transform: rotate(-45deg) scale(1); }
+      50% { transform: rotate(-45deg) scale(1.1); }
+    }
+
+    .big-heart .name-tag {
+      position: relative;
+      z-index: 1;
+      color: #fff;
+      font-size: 1.8rem;
+      font-weight: bold;
+      white-space: nowrap;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 第一步 -->
+  <div class="container" id="main">
+    <h2>吕明月爱不爱王超越？</h2>
+    <div class="buttons">
+      <button class="btn btn-love" id="btnLove">爱</button>
+      <button class="btn btn-no" id="btnNo">不爱</button>
+    </div>
+  </div>
+
+  <!-- 第二步 -->
+  <div class="step2" id="step2">
+    <h1>第二步</h1>
+    <p>请输入老公的名字 👇</p>
+    <div class="input-wrap">
+      <input type="text" id="husbandInput" placeholder="老公是谁？" maxlength="20">
+      <button class="btn-submit" id="btnSubmit">确认</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span class="icon">❌</span>
+    答案错误！<br>请重新选择~
+  </div>
+
+  <div id="hearts-container"></div>
+
+  <div class="success-msg" id="successMsg">
+    <h2></h2>
+  </div>
+
+  <div class="big-heart" id="bigHeart">
+    <div class="heart-wrap">
+      <div class="heart-shape"></div>
+      <span class="name-tag" id="nameTag"></span>
+    </div>
+  </div>
+
+  <script>
+    var btnLove = document.getElementById('btnLove');
+    var btnNo = document.getElementById('btnNo');
+    var btnSubmit = document.getElementById('btnSubmit');
+    var husbandInput = document.getElementById('husbandInput');
+    var toast = document.getElementById('toast');
+    var heartsContainer = document.getElementById('hearts-container');
+    var successMsg = document.getElementById('successMsg');
+    var bigHeart = document.getElementById('bigHeart');
+    var nameTag = document.getElementById('nameTag');
+    var main = document.getElementById('main');
+    var step2 = document.getElementById('step2');
+    var toastTimer = null;
+    var heartInterval = null;
+
+    function showToast(html) {
+      toast.innerHTML = html;
+      clearTimeout(toastTimer);
+      toast.classList.add('show');
+      toastTimer = setTimeout(function () {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    // 点击"不爱" - 显示错误
+    btnNo.addEventListener('click', function () {
+      btnNo.classList.remove('shake');
+      void btnNo.offsetWidth;
+      btnNo.classList.add('shake');
+      showToast('<span class="icon">❌</span>答案错误！<br>请重新选择~');
+    });
+
+    // 点击"爱" - 进入第二步
+    btnLove.addEventListener('click', function () {
+      main.classList.add('hidden');
+      step2.classList.add('show');
+      setTimeout(function () { husbandInput.focus(); }, 300);
+    });
+
+    // 第二步确认
+    function onSubmit() {
+      var name = husbandInput.value.trim();
+      if (!name) {
+        showToast('<span class="icon">❌</span>请输入老公的名字~');
+        return;
+      }
+      if (name !== '王超越') {
+        showToast('<span class="icon">❌</span>答案错误！<br>再想想~');
+        husbandInput.value = '';
+        husbandInput.focus();
+        return;
+      }
+
+      step2.classList.remove('show');
+      nameTag.textContent = '王超越 ♥ 吕明月';
+      bigHeart.classList.add('show');
+      successMsg.querySelector('h2').textContent = '❤️ ' + name + ' ❤️';
+
+      setTimeout(function () {
+        heartsContainer.classList.add('active');
+        successMsg.classList.add('show');
+        createHearts(60);
+        heartInterval = setInterval(function () {
+          createHearts(15);
+        }, 800);
+      }, 800);
+    }
+
+    btnSubmit.addEventListener('click', onSubmit);
+    husbandInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') onSubmit();
+    });
+
+    function createHearts(count) {
+      var hearts = ['❤', '♥', '💕', '💗', '💖','💞','❤️'];
+      for (var i = 0; i < count; i++) {
+        var heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+        heart.style.left = Math.random() * 100 + '%';
+        heart.style.bottom = '-50px';
+        heart.style.fontSize = (Math.random() * 30 + 16) + 'px';
+        heart.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        heart.style.animationDelay = (Math.random() * 1.5) + 's';
+        heartsContainer.appendChild(heart);
+
+        (function (el) {
+          setTimeout(function () {
+            if (el.parentNode) el.parentNode.removeChild(el);
+          }, 6000);
+        })(heart);
+      }
+    }
+  </script>
+</body>
+</html>
